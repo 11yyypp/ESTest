@@ -40,7 +40,6 @@ public class Users {
     @Column(name = "debit_account")
 	private String debitAccount;
     
-    // 對應 Likelist
     @OneToMany(mappedBy = "users", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Likelist> likelists;
 }
