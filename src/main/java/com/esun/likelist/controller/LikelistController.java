@@ -4,17 +4,20 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.esun.likelist.model.Likelist;
 import com.esun.likelist.model.LikelistAddDto;
 import com.esun.likelist.model.LikelistDto;
 import com.esun.likelist.model.LikelistService;
+
+
 
 @RestController
 @RequestMapping("/like")
@@ -43,6 +46,23 @@ public class LikelistController {
         LikelistDto saved = likelistSvc.addDto(dto);
         return ResponseEntity.ok(saved);
     }
-  
+    
+    // 修改喜好商品
+    @PutMapping("/update/{sn}")
+    public ResponseEntity<LikelistDto> update(
+            @PathVariable Integer sn,
+            @RequestBody LikelistAddDto dto) {
+        LikelistDto updated = likelistSvc.updateDto(sn, dto);
+        return ResponseEntity.ok(updated);
+    }
+    
+    // 刪除喜好商品
+    @DeleteMapping("/delete/{sn}")
+    public ResponseEntity<Void> delete(@PathVariable Integer sn) {
+        likelistSvc.deleteBySn(sn);
+        return ResponseEntity.noContent().build(); 
+    }
+
+
     
 }

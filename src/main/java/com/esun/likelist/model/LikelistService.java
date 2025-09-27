@@ -13,9 +13,6 @@ import com.esun.likelist.model.Likelist;
 
 
 
-
-
-
 @Service
 public class LikelistService {
 
@@ -62,7 +59,7 @@ public class LikelistService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         entity.setProduct(product);
 
-     // 計算總手續費與總金額
+        // 計算總手續費與總金額
         BigDecimal totalFee = product.getPrice()
                                      .multiply(BigDecimal.valueOf(dto.getQuantity()))
                                      .multiply(product.getFeeRate());
@@ -76,5 +73,48 @@ public class LikelistService {
         Likelist saved = likelistRepo.save(entity);
         return toDto(saved);
     }
+    
+    // 修改喜好商品
+    public LikelistDto updateDto(Integer sn, LikelistAddDto dto) {
+        // 先找出原本的喜好清單
+        Likelist entity = likelistRepo.findById(sn)
+                .orElseThrow(() -> new RuntimeException("Likelist not found"));
+
+        // 更新欄位
+        entity.setUserId(dto.getUserId());
+        entity.setQuantity(dto.getQuantity());
+        entity.setDebitAccount(dto.getDebitAccount());
+
+        // 重新找 Product
+        Product product = productRepo.findById(dto.getProductId())
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        entity.setProduct(product);
+
+        // 重新計算總手續費與總金額
+        BigDecimal totalFee = product.getPrice()
+                                     .multiply(BigDecimal.valueOf(dto.getQuantity()))
+                                     .multiply(product.getFeeRate());
+        BigDecimal totalAmount = product.getPrice()
+                                        .multiply(BigDecimal.valueOf(dto.getQuantity()))
+                                        .add(totalFee);
+
+        entity.setTotalFee(totalFee);
+        entity.setTotalAmount(totalAmount);
+
+        // 存回 DB
+        Likelist saved = likelistRepo.save(entity);
+
+        return toDto(saved);
+    }
+    
+ // 刪除喜好商品
+    public void deleteBySn(Integer sn) {
+        if (!likelistRepo.existsById(sn)) {
+            throw new RuntimeException("Likelist not found");
+        }
+        likelistRepo.deleteById(sn);
+    }
+
+
 
 }
