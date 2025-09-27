@@ -32,8 +32,9 @@
       </option>
     </select>
 
-    <input class="inline" v-model.number="newLike.quantity" placeholder="購買數量" @input="calculateAmount">
-    <input class="inline" v-model="newLike.debitAccount" placeholder="扣款帳號">
+	<input class="inline" v-model.number="newLike.quantity" type="number" min="1" placeholder="購買數量" @input="calculateAmount">
+	<input class="inline" v-model="newLike.debitAccount" type="text" maxlength="14"placeholder="扣款帳號" @input="newLike.debitAccount = newLike.debitAccount.replace(/\D/g,'')">
+
 
     <!-- 顯示選中產品價格與手續費 -->
     <div class="inline" v-if="selectedProduct">
@@ -86,8 +87,8 @@ const { createApp } = Vue;
 createApp({
   data() {
     return {
-      likes: [],
-      products: [],
+      likes: [], // 喜好清單
+      products: [], // 產品清單
       newLike: { userId: '', productId: '', quantity: 1, debitAccount: '' },
       selectedProduct: null,
       totalFee: null,
@@ -99,10 +100,13 @@ createApp({
     this.fetchLikes();
   },
   methods: {
+    // 取得產品名稱
     getProductName(productId) {
       const product = this.products.find(p => p.productId === productId);
       return product ? product.productName : '';
     },
+
+    // 取得產品清單
     async fetchProducts() {
       try {
         const res = await fetch('/product/getAll');
@@ -111,8 +115,10 @@ createApp({
       } catch (err) {
         console.error(err);
         alert('取得產品清單失敗');
-      }
-    },
+     }
+   },
+
+    // 取得喜好清單
     async fetchLikes() {
       try {
         const res = await fetch('/like/getAll');
@@ -121,12 +127,16 @@ createApp({
       } catch (err) {
         console.error(err);
         alert('取得喜好清單失敗');
-      }
-    },
+     }
+   },
+
+    // 選擇產品時更新價格
     updateProductInfo() {
       this.selectedProduct = this.products.find(p => p.productId === this.newLike.productId);
       this.calculateAmount();
     },
+
+    // 計算手續費和總金額
     calculateAmount() {
       if (!this.selectedProduct || !this.newLike.quantity) {
         this.totalFee = null;
@@ -136,27 +146,37 @@ createApp({
       this.totalFee = (this.selectedProduct.price * this.newLike.quantity * this.selectedProduct.feeRate).toFixed(2);
       this.totalAmount = (this.selectedProduct.price * this.newLike.quantity + parseFloat(this.totalFee)).toFixed(2);
     },
+
+    // 新增喜好商品
     async addLike() {
-      if (!this.newLike.productId) { alert('請選擇產品'); return; }
-      try {
-        const res = await fetch('/like/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(this.newLike)
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const added = await res.json();
-        this.likes.push(added);
-        alert('新增成功');
-        this.newLike = { userId: '', productId: '', quantity: 1, debitAccount: '' };
-        this.selectedProduct = null;
-        this.totalFee = null;
-        this.totalAmount = null;
-      } catch (err) {
-        console.error(err);
-        alert('新增失敗: ' + err.message);
-      }
-    },
+ 	 try {
+	   const res = await fetch('/like/add', {
+	   method: 'POST',
+	   headers: { 'Content-Type': 'application/json' },
+	   body: JSON.stringify(this.newLike)
+	});
+	   if (!res.ok) {
+		      const errMsg = await res.text();
+		      alert(errMsg); // 顯示自訂錯誤訊息
+		      return;
+		    }
+	   const added = await res.json();
+	    this.likes.push(added);  // 即時更新
+	    alert('新增成功');
+
+    // 重置表單
+    this.newLike = { userId: '', productId: '', quantity: 1, debitAccount: '' };
+    this.selectedProduct = null;
+    this.totalFee = null;
+    this.totalAmount = null;
+
+  } catch (err) {
+    console.error(err);
+    alert('新增失敗: ' + err.message);
+  }
+},
+
+    // 修改喜好商品
     async updateLike(like) {
       try {
         const res = await fetch(`/like/update/${like.sn}`, {
@@ -164,27 +184,32 @@ createApp({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userId: like.userId,
-            productId: like.productId || this.products[0]?.productId,
-            quantity: like.quantity || 1,
+            productId: like.productId,
+            quantity: like.quantity,
             debitAccount: like.debitAccount
           })
         });
         if (!res.ok) throw new Error(await res.text());
-        await res.json();
-        alert('修改成功');
-        this.fetchLikes();
+        const updated = await res.json();
+
+        const index = this.likes.findIndex(l => l.sn === updated.sn);
+        if (index !== -1) this.likes.splice(index, 1, updated);
+
       } catch (err) {
         console.error(err);
         alert('修改失敗: ' + err.message);
       }
     },
+
+    // 刪除喜好商品
     async deleteLike(sn) {
       if (!confirm('確定刪除嗎?')) return;
       try {
         const res = await fetch(`/like/delete/${sn}`, { method: 'DELETE' });
         if (!res.ok) throw new Error(await res.text());
+
         this.likes = this.likes.filter(l => l.sn !== sn);
-        alert('刪除成功');
+
       } catch (err) {
         console.error(err);
         alert('刪除失敗: ' + err.message);
@@ -193,6 +218,7 @@ createApp({
   }
 }).mount('#app');
 </script>
+
 
 </body>
 </html>

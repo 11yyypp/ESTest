@@ -42,10 +42,19 @@ public class LikelistController {
     
     // 新增喜好商品
     @PostMapping("/add")
-    public ResponseEntity<LikelistDto> add(@RequestBody LikelistAddDto dto) {
-        LikelistDto saved = likelistSvc.addDto(dto);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<?> add(@RequestBody LikelistAddDto dto) {
+        try {
+            LikelistDto saved = likelistSvc.addDto(dto);
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("新增喜好商品失敗: " + e.getMessage());
+        }
     }
+
+
+
     
     // 修改喜好商品
     @PutMapping("/update/{sn}")

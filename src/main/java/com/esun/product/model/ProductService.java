@@ -11,7 +11,6 @@ public class ProductService {
     @Autowired
     private ProductRepository productRepo;
 
-    // 改成 getAll() 與 Controller 一致
     public List<Product> getAll() {
         return productRepo.findAll();
     }

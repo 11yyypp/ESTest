@@ -2,31 +2,22 @@ package com.esun.users.model;
 
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class UsersService {
 
-	private final UsersRepository usersRepository;
+    private final UsersRepository usersRepo;
 
-	public UsersService(UsersRepository usersRepository) {
-		this.usersRepository = usersRepository;
-	}
+    public UsersService(UsersRepository usersRepo) {
+        this.usersRepo = usersRepo;
+    }
 
-//	public void add(Map<String, Object> body) {
-//		usersRepository.insert(body);
-//	}
-//
-//	public void update(Map<String, Object> body) {
-//		usersRepository.update(body);
-//	}
-//
-//	public void delete(String userId) {
-//		usersRepository.delete(userId);
-//	}
-//
-//	public List<Map<String, Object>> list() {
-//		return usersRepository.list();
-//	}
+    public Users getUserById(String userId) {
+        if (userId == null || userId.isEmpty()) {
+            throw new IllegalArgumentException("請輸入使用者ID!");
+        }
+        return usersRepo.findById(userId)
+                .orElseThrow(() -> new RuntimeException("請輸入正確的使用者ID!"));
+    }
 }

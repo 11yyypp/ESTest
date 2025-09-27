@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 
 import com.esun.product.model.Product;
 import com.esun.product.model.ProductRepository;
+import com.esun.users.model.Users;
+import com.esun.users.model.UsersService;
 
 
 
@@ -20,6 +22,13 @@ public class LikelistService {
     
     @Autowired
     private ProductRepository productRepo;
+    
+    @Autowired
+    private UsersService usersSvc;
+//
+//    Users user = usersSvc.getUserById(dto.getUserId());
+//    entity.setUsers(user);
+
 
     public List<LikelistDto> getAllDto() {
         return likelistRepo.findAll()
@@ -53,14 +62,37 @@ public class LikelistService {
     
     // 新增喜好商品
     public LikelistDto addDto(LikelistAddDto dto) {
+    	
+    	// 驗證輸入
+        if (dto.getUserId() == null || dto.getUserId().isEmpty()) {
+            throw new IllegalArgumentException("請輸入使用者ID!");
+        }
+        if (dto.getQuantity() == null || dto.getQuantity() <= 0) {
+            throw new IllegalArgumentException("請輸入購買數量!");
+        }
+        if (dto.getDebitAccount() == null || dto.getDebitAccount().isEmpty()) {
+            throw new IllegalArgumentException("請輸入扣款帳號!");
+        }
+        if (dto.getProductId() == null) {
+            throw new IllegalArgumentException("請選擇產品!");
+        }
+        if (dto.getDebitAccount().length() < 10 || dto.getDebitAccount().length() > 14) {
+        	throw new IllegalArgumentException("請輸入正確扣款帳號!");
+          }
+        
         Likelist entity = new Likelist();
         entity.setUserId(dto.getUserId());
         entity.setQuantity(dto.getQuantity());
         entity.setDebitAccount(dto.getDebitAccount());
 
+        // 取得 Product
         Product product = productRepo.findById(dto.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         entity.setProduct(product);
+
+        // 取得 User
+        Users user = usersSvc.getUserById(dto.getUserId());
+        entity.setUsers(user);
 
         // 計算總手續費與總金額
         BigDecimal totalFee = product.getPrice()
@@ -72,10 +104,26 @@ public class LikelistService {
 
         entity.setTotalFee(totalFee);
         entity.setTotalAmount(totalAmount);
+        
+        
 
+        // 存入 DB
         Likelist saved = likelistRepo.save(entity);
-        return toDto(saved);
+        
+        String email = usersSvc.getUserById(saved.getUserId()).getEmail();
+
+        return new LikelistDto(
+                saved.getSn(),
+                saved.getUserId(),
+                saved.getProduct().getProductId(),
+                saved.getProduct().getProductName(),
+                saved.getTotalAmount(),
+                saved.getTotalFee(),
+                saved.getDebitAccount(),
+                email
+            );
     }
+
     
     // 修改喜好商品
     public LikelistDto updateDto(Integer sn, LikelistAddDto dto) {
@@ -92,6 +140,8 @@ public class LikelistService {
         Product product = productRepo.findById(dto.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
         entity.setProduct(product);
+        
+
 
         // 重新計算總手續費與總金額
         BigDecimal totalFee = product.getPrice()
