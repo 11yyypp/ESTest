@@ -12,6 +12,15 @@
     input, select { padding: 5px; margin: 5px; }
     button { margin: 2px; padding: 5px 10px; }
     .inline { display: inline-block; margin-right: 10px; }
+    .modal {
+      position: fixed; top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.5); display:flex; justify-content:center; align-items:center;
+    }
+    .modal-content {
+      background: #fff; padding:20px; border-radius:5px; width:400px;
+    }
+    .modal-buttons { margin-top:10px; }
+    .modal-buttons button { margin-right:10px; }
   </style>
 </head>
 <body>
@@ -24,7 +33,6 @@
   <div>
     <input class="inline" v-model="newLike.userId" placeholder="使用者 ID">
 
-    <!-- 產品下拉選單 -->
     <select class="inline" v-model.number="newLike.productId" @change="updateProductInfo">
       <option disabled value="">請選擇產品</option>
       <option v-for="product in products" :key="product.productId" :value="product.productId">
@@ -32,11 +40,9 @@
       </option>
     </select>
 
-	<input class="inline" v-model.number="newLike.quantity" type="number" min="1" placeholder="購買數量" @input="calculateAmount">
-	<input class="inline" v-model="newLike.debitAccount" type="text" maxlength="14"placeholder="扣款帳號" @input="newLike.debitAccount = newLike.debitAccount.replace(/\D/g,'')">
+    <input class="inline" v-model.number="newLike.quantity" type="number" min="1" placeholder="購買數量" @input="calculateAmount">
+    <input class="inline" v-model="newLike.debitAccount" type="text" maxlength="14" placeholder="扣款帳號" @input="newLike.debitAccount = newLike.debitAccount.replace(/\D/g,'')">
 
-
-    <!-- 顯示選中產品價格與手續費 -->
     <div class="inline" v-if="selectedProduct">
       價格: {{ selectedProduct.price }} | 手續費率: {{ selectedProduct.feeRate }}
     </div>
@@ -50,35 +56,65 @@
   <!-- 喜好清單 -->
   <h2>喜好清單</h2>
   <table>
-  <thead>
-    <tr>
-      <th>SN</th>
-      <th>使用者</th>
-      <th>產品</th>
-      <th>總金額</th>
-      <th>總手續費</th>
-      <th>扣款帳號</th>
-      <th>聯絡信箱</th>
-      <th>操作</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr v-for="like in likes" :key="like.sn">
-      <td>{{ like.sn }}</td>
-      <td>{{ like.userId }}</td>
-      <td>{{ like.productName }}</td>
-      <td>{{ like.totalAmount }}</td>
-      <td>{{ like.totalFee }}</td>
-      <td>{{ like.debitAccount }}</td>
-      <td>{{ like.email }}</td>
-      <td>
-        <button @click="updateLike(like)">修改</button>
-        <button @click="deleteLike(like.sn)">刪除</button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+    <thead>
+      <tr>
+        <th>SN</th>
+        <th>使用者</th>
+        <th>產品</th>
+        <th>總金額</th>
+        <th>總手續費</th>
+        <th>扣款帳號</th>
+        <th>聯絡信箱</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="like in likes" :key="like.sn">
+        <td>{{ like.sn }}</td>
+        <td>{{ like.userId }}</td>
+        <td>{{ like.productName }}</td>
+        <td>{{ like.totalAmount }}</td>
+        <td>{{ like.totalFee }}</td>
+        <td>{{ like.debitAccount }}</td>
+        <td>{{ like.email }}</td>
+        <td>
+          <button @click="openEditModal(like)">修改</button>
+          <button @click="deleteLike(like.sn)">刪除</button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
+  <!-- 修改燈箱 -->
+  <div v-if="showEditModal" class="modal">
+    <div class="modal-content">
+      <h3>修改喜好商品</h3>
+      <p>SN: {{ selectedLike.sn }}</p>
+
+      <label>產品名稱</label>
+      <select v-model.number="selectedLike.productId" @change="updateEditProductInfo">
+        <option v-for="p in products" :key="p.productId" :value="p.productId">
+          {{ p.productName }}
+        </option>
+      </select>
+
+      <label>購買數量</label>
+      <input type="number" v-model.number="selectedLike.quantity" min="1" style="width:80px" @input="updateEditProductInfo">
+
+      <p>價格: {{ selectedLike.price }}</p>
+      <p>手續費率: {{ selectedLike.feeRate }}</p>
+      <p>總手續費: {{ selectedLike.totalFee }}</p>
+      <p>總金額: {{ selectedLike.totalAmount }}</p>
+
+      <label>扣款帳號</label>
+      <input type="text" v-model="selectedLike.debitAccount" maxlength="14" @input="selectedLike.debitAccount = selectedLike.debitAccount.replace(/\D/g,'')">
+
+      <div class="modal-buttons">
+        <button @click="saveLike(selectedLike)">儲存</button>
+        <button @click="showEditModal=false">取消</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -87,26 +123,21 @@ const { createApp } = Vue;
 createApp({
   data() {
     return {
-      likes: [], // 喜好清單
-      products: [], // 產品清單
+      likes: [],
+      products: [],
       newLike: { userId: '', productId: '', quantity: 1, debitAccount: '' },
       selectedProduct: null,
       totalFee: null,
-      totalAmount: null
-    }
+      totalAmount: null,
+      selectedLike: null,
+      showEditModal: false
+    };
   },
   mounted() {
     this.fetchProducts();
     this.fetchLikes();
   },
   methods: {
-    // 取得產品名稱
-    getProductName(productId) {
-      const product = this.products.find(p => p.productId === productId);
-      return product ? product.productName : '';
-    },
-
-    // 取得產品清單
     async fetchProducts() {
       try {
         const res = await fetch('/product/getAll');
@@ -115,10 +146,8 @@ createApp({
       } catch (err) {
         console.error(err);
         alert('取得產品清單失敗');
-     }
-   },
-
-    // 取得喜好清單
+      }
+    },
     async fetchLikes() {
       try {
         const res = await fetch('/like/getAll');
@@ -127,57 +156,78 @@ createApp({
       } catch (err) {
         console.error(err);
         alert('取得喜好清單失敗');
-     }
-   },
-
-    // 選擇產品時更新價格
+      }
+    },
     updateProductInfo() {
       this.selectedProduct = this.products.find(p => p.productId === this.newLike.productId);
       this.calculateAmount();
     },
-
-    // 計算手續費和總金額
     calculateAmount() {
       if (!this.selectedProduct || !this.newLike.quantity) {
         this.totalFee = null;
         this.totalAmount = null;
         return;
       }
-      this.totalFee = (this.selectedProduct.price * this.newLike.quantity * this.selectedProduct.feeRate).toFixed(2);
-      this.totalAmount = (this.selectedProduct.price * this.newLike.quantity + parseFloat(this.totalFee)).toFixed(2);
+      const qty = Number(this.newLike.quantity) || 1;
+      const fee = this.selectedProduct.price * qty * this.selectedProduct.feeRate;
+      this.totalFee = fee.toFixed(2);
+      this.totalAmount = (this.selectedProduct.price * qty + fee).toFixed(2);
     },
-
-    // 新增喜好商品
     async addLike() {
- 	 try {
-	   const res = await fetch('/like/add', {
-	   method: 'POST',
-	   headers: { 'Content-Type': 'application/json' },
-	   body: JSON.stringify(this.newLike)
-	});
-	   if (!res.ok) {
-		      const errMsg = await res.text();
-		      alert(errMsg); // 顯示自訂錯誤訊息
-		      return;
-		    }
-	   const added = await res.json();
-	    this.likes.push(added);  // 即時更新
-	    alert('新增成功');
+      try {
+        const res = await fetch('/like/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(this.newLike)
+        });
+        if (!res.ok) {
+          const errMsg = await res.text();
+          alert(errMsg);
+          return;
+        }
+        const added = await res.json();
+        this.likes.push(added);
+        alert('新增成功');
 
-    // 重置表單
-    this.newLike = { userId: '', productId: '', quantity: 1, debitAccount: '' };
-    this.selectedProduct = null;
-    this.totalFee = null;
-    this.totalAmount = null;
+        this.newLike = { userId: '', productId: '', quantity: 1, debitAccount: '' };
+        this.selectedProduct = null;
+        this.totalFee = null;
+        this.totalAmount = null;
+      } catch (err) {
+        console.error(err);
+        alert('新增失敗: ' + err.message);
+      }
+    },
+    openEditModal(like) {
+      this.selectedLike = JSON.parse(JSON.stringify(like));
 
-  } catch (err) {
-    console.error(err);
-    alert('新增失敗: ' + err.message);
-  }
-},
+      // 確保 quantity 是數字
+      if (!this.selectedLike.quantity || isNaN(this.selectedLike.quantity)) {
+        this.selectedLike.quantity = 1;
+      } else {
+        this.selectedLike.quantity = Number(this.selectedLike.quantity);
+      }
 
-    // 修改喜好商品
-    async updateLike(like) {
+      this.updateEditProductInfo();
+      this.showEditModal = true;
+    },
+    updateEditProductInfo() {
+      if (!this.selectedLike) return;
+      const p = this.products.find(prod => prod.productId === this.selectedLike.productId);
+      if (!p) return;
+
+      this.selectedLike.price = Number(p.price);
+      this.selectedLike.feeRate = Number(p.feeRate);
+
+      const qty = Number(this.selectedLike.quantity) || 1;
+      const fee = this.selectedLike.price * qty * this.selectedLike.feeRate;
+      this.selectedLike.totalFee = fee.toFixed(2);
+      this.selectedLike.totalAmount = (this.selectedLike.price * qty + fee).toFixed(2);
+    },
+    async saveLike(like) {
+      if (!like.quantity || like.quantity < 1) { alert('請輸入購買數量!'); return; }
+      if (!like.debitAccount || like.debitAccount.length < 10 || like.debitAccount.length > 14) { alert('請輸入正確扣款帳號!'); return; }
+
       try {
         const res = await fetch(`/like/update/${like.sn}`, {
           method: 'PUT',
@@ -195,36 +245,32 @@ createApp({
         const index = this.likes.findIndex(l => l.sn === updated.sn);
         if (index !== -1) this.likes.splice(index, 1, updated);
 
+        this.showEditModal = false;
+        alert('修改成功');
       } catch (err) {
-        console.error(err);
         alert('修改失敗: ' + err.message);
       }
     },
-
-    // 刪除喜好商品
     async deleteLike(sn) {
-    	  const like = this.likes.find(l => l.sn === sn);
-    	  if (!like) return;
+      const like = this.likes.find(l => l.sn === sn);
+      if (!like) return;
 
-    	  const confirmMsg = `確定刪除此商品？\n產品名稱：${like.productName}\n產品價格：${like.totalAmount - like.totalFee}\n手續費率：${like.totalFee / (like.totalAmount - like.totalFee)}`
-    	  
-    	  if (!confirm(confirmMsg)) return;
+      const confirmMsg = `確定刪除此商品？\n產品名稱：${like.productName}\n產品價格：${like.totalAmount - like.totalFee}\n手續費率：${like.totalFee / (like.totalAmount - like.totalFee)}`;
+      if (!confirm(confirmMsg)) return;
 
-    	  try {
-    	    const res = await fetch(`/like/delete/${sn}`, { method: 'DELETE' });
-    	    if (!res.ok) throw new Error(await res.text());
-    	    this.likes = this.likes.filter(l => l.sn !== sn);
-    	    alert('刪除成功');
-    	  } catch (err) {
-    	    console.error(err);
-    	    alert('刪除失敗: ' + err.message);
-    	  }
-    	}
-
+      try {
+        const res = await fetch(`/like/delete/${sn}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(await res.text());
+        this.likes = this.likes.filter(l => l.sn !== sn);
+        alert('刪除成功');
+      } catch (err) {
+        console.error(err);
+        alert('刪除失敗: ' + err.message);
+      }
+    }
   }
 }).mount('#app');
 </script>
-
 
 </body>
 </html>
