@@ -37,12 +37,12 @@ public class LikelistController {
         return ResponseEntity.ok(list);
     }
     
-// // 新增喜好商品
-//    @PostMapping("/add")
-//    public ResponseEntity<Likelist> add(@RequestBody LikelistAddDto dto) {
-//        Likelist saved = likelistSvc.add(dto);
-//        return ResponseEntity.ok(saved);
-//    }
-//    
+    // 新增喜好商品
+    @PostMapping("/add")
+    public ResponseEntity<LikelistDto> add(@RequestBody LikelistAddDto dto) {
+        LikelistDto saved = likelistSvc.addDto(dto);
+        return ResponseEntity.ok(saved);
+    }
+  
     
 }

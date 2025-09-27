@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface LikelistRepository extends JpaRepository<Likelist, String> {
+public interface LikelistRepository extends JpaRepository<Likelist, Integer> {
 	List<Likelist> findByUserId(String userId);
+	
+
 }
 
