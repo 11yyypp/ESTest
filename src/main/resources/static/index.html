@@ -203,18 +203,24 @@ createApp({
 
     // 刪除喜好商品
     async deleteLike(sn) {
-      if (!confirm('確定刪除嗎?')) return;
-      try {
-        const res = await fetch(`/like/delete/${sn}`, { method: 'DELETE' });
-        if (!res.ok) throw new Error(await res.text());
+    	  const like = this.likes.find(l => l.sn === sn);
+    	  if (!like) return;
 
-        this.likes = this.likes.filter(l => l.sn !== sn);
+    	  const confirmMsg = `確定刪除此商品？\n產品名稱：${like.productName}\n產品價格：${like.totalAmount - like.totalFee}\n手續費率：${like.totalFee / (like.totalAmount - like.totalFee)}`
+    	  
+    	  if (!confirm(confirmMsg)) return;
 
-      } catch (err) {
-        console.error(err);
-        alert('刪除失敗: ' + err.message);
-      }
-    }
+    	  try {
+    	    const res = await fetch(`/like/delete/${sn}`, { method: 'DELETE' });
+    	    if (!res.ok) throw new Error(await res.text());
+    	    this.likes = this.likes.filter(l => l.sn !== sn);
+    	    alert('刪除成功');
+    	  } catch (err) {
+    	    console.error(err);
+    	    alert('刪除失敗: ' + err.message);
+    	  }
+    	}
+
   }
 }).mount('#app');
 </script>
