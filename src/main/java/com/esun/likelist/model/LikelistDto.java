@@ -12,8 +12,10 @@ import java.math.BigDecimal;
 public class LikelistDto {
     private Integer sn;
     private String userId;
-    private BigDecimal totalFee;
+    private Integer productId;
+    private String productName; 
     private BigDecimal totalAmount;
+    private BigDecimal totalFee;
     private String debitAccount;
     private String email;  // 從 Users entity 取得
 }

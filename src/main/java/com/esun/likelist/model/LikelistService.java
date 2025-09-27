@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 
 import com.esun.product.model.Product;
 import com.esun.product.model.ProductRepository;
-import com.esun.likelist.model.Likelist;
 
 
 
@@ -41,12 +40,16 @@ public class LikelistService {
         return new LikelistDto(
             l.getSn(),
             l.getUserId(),
-            l.getTotalFee(),
+            l.getProduct() != null ? l.getProduct().getProductId() : null,
+            l.getProduct() != null ? l.getProduct().getProductName() : null,
             l.getTotalAmount(),
+            l.getTotalFee(),
             l.getDebitAccount(),
-            l.getUsers() != null ? l.getUsers().getEmail() : null
+            l.getUsers() != null ? l.getUsers().getEmail() : null // email
         );
     }
+
+
     
     // 新增喜好商品
     public LikelistDto addDto(LikelistAddDto dto) {

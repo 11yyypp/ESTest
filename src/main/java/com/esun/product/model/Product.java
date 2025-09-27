@@ -33,7 +33,7 @@ public class Product {
 	private BigDecimal price;
 	
 
-    @Column(name = "feeRate")
+    @Column(name = "fee_rate")
 	private BigDecimal feeRate;
 }
 

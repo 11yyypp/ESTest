@@ -1,32 +1,23 @@
 package com.esun.product.model;
 
-import org.springframework.stereotype.Service;
-
 import java.util.List;
-import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ProductService {
 
-	private final ProductRepository productRepository;
+    @Autowired
+    private ProductRepository productRepo;
 
-	public ProductService(ProductRepository productRepository) {
-		this.productRepository = productRepository;
-	}
+    // 改成 getAll() 與 Controller 一致
+    public List<Product> getAll() {
+        return productRepo.findAll();
+    }
 
-//	public void add(Map<String, Object> body) {
-//		productRepository.insert(body);
-//	}
-//
-//	public void update(Map<String, Object> body) {
-//		productRepository.update(body);
-//	}
-//
-//	public void delete(Integer productId) {
-//		productRepository.delete(productId);
-//	}
-//
-//	public List<Map<String, Object>> list() {
-//		return productRepository.list();
-//	}
+    public Product getProductById(Integer id) {
+        return productRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+    }
 }
